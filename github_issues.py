@@ -29,6 +29,19 @@ def write_cached_json(suffix, data):
     with open(path, 'w') as f:
         f.write(data)
 
+def rate_limited(headers):
+    for line in headers:
+        if line.find(": ") == -1:
+	    continue
+        (h, v) = line.split(": ")
+        if h == "X-RateLimit-Remaining":
+	    try:
+		i = int(v)
+            except ValueError:
+                continue
+	    if i < 1:
+                return True
+
 def fetch_json(suffix):
     cached = fetch_cached_json(suffix)
     if cached is None:
@@ -40,7 +53,12 @@ def fetch_json(suffix):
         write_cached_json(suffix, result)
     else:
         result = cached
-    return result.split("\r\n\r\n", 1)
+    (headers, payload) = result.split("\r\n\r\n", 1)
+    if rate_limited(headers.split("\r\n")):
+	print "Warning: Rate Limit Reached, sleeping 30 seconds..."
+	time.sleep(30)
+	return fetch_json(suffix)
+    return (headers, payload)
 
 class Issue(object):
     def __init__(self, github_dict):
