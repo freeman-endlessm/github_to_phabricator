@@ -100,6 +100,9 @@ def FetchGithubIssues():
             (headers, comments_json) = fetch_json("/issues/%d/comments?per_page=100" % issue.id)
             comments = json.loads(comments_json)
             for c in comments:
+                if type(c) != dict:
+                    print "Warning: malformed comment ("+str(c)+") in issue#"+str(issue.id)+" type "+str(type(c))+". Skipping..."
+                    continue
                 issue.AddComment(c['user']['login'], c['created_at'], c['body'])
 
     return sorted(github_issues, key=operator.attrgetter('id'))
