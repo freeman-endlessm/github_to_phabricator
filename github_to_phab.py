@@ -59,6 +59,17 @@ for issue in github_issues:
             if issue.closed_at:
                 tphid = phabdb.last_state_change(phid)
                 phabdb.set_transaction_time(tphid, issue.closed_at.strftime("%s"))
+
+    if config.translate_labels != None:
+        for ilabel in issue.labels:
+            if config.translate_labels.has_key(ilabel):
+                (field_type, field_value) = config.translate_labels[ilabel]
+                print "DEBUG: translate Label %s to field_type %s and value %s"%(ilabel, field_type, field_value)
+                if field_type=="Status":
+                    api.set_status(id, field_value)
+            else:
+                print "DEBUG: skip Label %s"%(ilabel)
+
     for (author, date, comment) in issue.comments:
         print "Adding comment from %s" % author
         author_phid = api.get_phid_by_username(author)

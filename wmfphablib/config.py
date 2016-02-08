@@ -10,4 +10,7 @@ migration_user = "github-migration"
 delete_existing_issues = False
 force_ids = False
 have_db_access = False
-
+translate_labels = None
+#translate_labels = {
+	#"GitHub Label Name": ("Phabricator Field", "Value"),
+#}
