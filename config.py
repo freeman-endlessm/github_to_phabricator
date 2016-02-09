@@ -1,3 +1,8 @@
+#!/usr/bin/python
+
+import re
+
+## Main Config
 USERNAME="github username"
 TOKEN="github access token"
 USER="organization"
@@ -8,6 +13,7 @@ MAX_ID=None
 BASE_URL="https://api.github.com/"
 CACHE_DIR="cache/"
 
+## Translate GitHub Labels to Phabricator Custom Fields
 LABELS_TO_FIELDS = {
   "Component": {
     "PHABRICATOR_FIELD": "com.organization.component",
@@ -18,3 +24,8 @@ LABELS_TO_FIELDS = {
     "GITHUB_LABEL_PATTERN": "^Product:\s+(.*)"
   }
 }
+
+## Strip the following patterns from issue descriptions
+CLEAN_DESCRIPTION_REGEXES=[
+    re.compile("<!--.*?huboard.*?-->\n?", re.MULTILINE | re.DOTALL),
+]
