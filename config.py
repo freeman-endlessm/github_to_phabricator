@@ -10,7 +10,7 @@ PROJECT="repository"
 MIN_ID=None
 MAX_ID=None
 
-BASE_URL="https://api.github.com/"
+BASE_URL="https://api.github.com"
 CACHE_DIR="cache/"
 
 ## Translate GitHub Labels to Phabricator Custom Fields

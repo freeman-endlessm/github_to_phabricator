@@ -33,7 +33,7 @@ def rate_limited(headers):
 def fetch_json(suffix):
     cached = fetch_cached_json(suffix)
     if cached is None:
-        url = BASE_URL + "repos/" + USER + "/" + PROJECT + suffix
+        url = BASE_URL + suffix
 
         process = subprocess.Popen(['curl', '-i', '-s', '-u', USERNAME + ":" + TOKEN, url],
                                stdout=subprocess.PIPE)

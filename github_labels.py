@@ -18,7 +18,7 @@ def FetchGithubLabels():
     github_labels = []
 
     while page <= num_pages:
-        (headers, labels_json) = fetch_json("/labels?state=all&per_page=100&page=%d" % page)
+        (headers, labels_json) = fetch_json("/repos/%s/%s/labels?state=all&per_page=100&page=%d" % (USER, PROJECT, page))
         page = page + 1
         labels.extend(json.loads(labels_json))
         headers = headers.split('\r\n')

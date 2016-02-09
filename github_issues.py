@@ -41,7 +41,7 @@ def FetchGithubIssues():
     github_issues = []
 
     while page <= num_pages:
-        (headers, issues_json) = fetch_json("/issues?state=all&per_page=100&page=%d" % page)
+        (headers, issues_json) = fetch_json("/repos/%s/%s/issues?state=all&per_page=100&page=%d" % (USER, PROJECT, page))
         page = page + 1
         issues.extend(json.loads(issues_json))
         headers = headers.split('\r\n')
@@ -62,7 +62,7 @@ def FetchGithubIssues():
                 continue
         github_issues.append(issue)
         if issue.json['comments'] > 0:
-            (headers, comments_json) = fetch_json("/issues/%d/comments?per_page=100" % issue.id)
+            (headers, comments_json) = fetch_json("/repos/%s/%s/issues/%d/comments?per_page=100" % (USER, PROJECT, issue.id))
             comments = json.loads(comments_json)
             for c in comments:
                 if type(c) != dict:
