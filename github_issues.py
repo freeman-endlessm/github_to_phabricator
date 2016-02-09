@@ -7,15 +7,7 @@ import operator
 from datetime import datetime
 import os
 
-USERNAME="github username"
-TOKEN="github access token"
-USER="organization"
-PROJECT="repository"
-MIN_ID=None
-MAX_ID=None
-
-BASE_URL="https://api.github.com/"
-CACHE_DIR="cache/"
+from config import *
 
 def fetch_cached_json(suffix):
     path = CACHE_DIR + suffix.replace("/", "_")

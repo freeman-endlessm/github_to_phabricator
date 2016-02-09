@@ -15,6 +15,9 @@ The data that gets downloaded from github is cached, so you must create a cache 
 The script uses the external command 'curl' to fetch all the data, so make sure curl is installed. You can run ./github_issues.py to get it to fetch the issues and comments and print out the title and id of all the issues it found.
 
 
+# Translate Labels
+TODO
+
 # Importing into Phabricator
 The second part is what uploads the data to Phabricator. It can be configured in wmfphablib/config.py file. It will need a dedicated user for the migration (by default "github-migration"), so you must create such a user (add -> User Account) and set it as a bot.
 You will then need to generate a conduit API token for that user, by accessing the user's profile (you can search for the user github-migration, then Edit settings, then Conduit API token).
