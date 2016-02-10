@@ -79,8 +79,8 @@ for issue in github_issues:
                     for field_name in LABELS_TO_FIELDS.keys():
                         if field_type==field_name:
                             print "Label Translate: GitHub Label %s -> Phabricator %s %s"%(ilabel, field_type, field_value)
-			    field_id=LABELS_TO_FIELDS[field_name]["PHABRICATOR_FIELD"]
-			    api.set_custom_field(id, field_id, field_value)
+                            field_id=LABELS_TO_FIELDS[field_name]["PHABRICATOR_FIELD"]
+                            api.set_custom_field(id, field_id, field_value)
 
     for (author, date, comment) in issue.comments:
         print "Adding comment from %s" % author
