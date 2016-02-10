@@ -56,6 +56,6 @@ if __name__ == '__main__':
     for member in members:
         print "#%s" % (member.login)
         try:
-            api.create_user(member.login, member.name, member.login+"@github.endlessm.com")
+            api.create_user(member.login, member.name, member.email)
         except APIError, e:
             print "Warning: Failed to create user %s: %s"%(member.login, e)
