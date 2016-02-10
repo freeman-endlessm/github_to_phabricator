@@ -88,6 +88,9 @@ class phabapi:
             return result[0]['phid']
         return None
 
+    def create_user(self, username, realname, email):
+        self.con.user.create(username=username, realname=realname, email=email)
+
 if config.have_db_access:
     def ensure_project(self, project_name,
                              pmembers=[],

@@ -3,12 +3,20 @@
 import json
 from config import *
 from github_cache import *
+from wmfphablib.phabapi import phabapi
 
 class Member(object):
     def __init__(self, github_dict):
         self.json = github_dict
         self.login = self.json['login']
-        self.email = self.json['email']
+        if self.json['name']:
+            self.name = self.json['name']
+        else:
+            self.name = ""
+        if self.json['name']:
+            self.email = self.json['email']
+        else:
+            self.email = ""
 
 def FetchGithubMembers():
     page = 1
@@ -41,6 +49,13 @@ def FetchGithubMembers():
 
 
 if __name__ == '__main__':
+    from wmfphablib import phabapi
+    from phabricator import APIError
+    api = phabapi.phabapi()
     members = FetchGithubMembers()
     for member in members:
-	print "%s:%s" % (member.login, member.email)
+        print "#%s" % (member.login)
+        try:
+            api.create_user(member.login, member.name, member.login+"@github.endlessm.com")
+        except APIError, e:
+            print "Warning: Failed to create user %s: %s"%(member.login, e)
