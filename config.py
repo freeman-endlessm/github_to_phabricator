@@ -25,6 +25,8 @@ LABELS_TO_FIELDS = {
   }
 }
 
+STATIC_FIELDS={}
+
 ## Strip the following patterns from issue descriptions
 CLEAN_DESCRIPTION_REGEXES=[
     re.compile("<!--.*?huboard.*?-->\n?", re.MULTILINE | re.DOTALL),

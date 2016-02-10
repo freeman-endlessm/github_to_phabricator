@@ -40,7 +40,7 @@ def FetchGithubLabels():
 
 
 if __name__ == '__main__':
-    custom_field_definitions={}
+    custom_field_definitions=STATIC_FIELDS
     label_matches = {}
     for field_name in LABELS_TO_FIELDS.keys():
         custom_field_definitions[LABELS_TO_FIELDS[field_name]["PHABRICATOR_FIELD"]] = {
