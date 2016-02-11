@@ -42,7 +42,10 @@ for issue in github_issues:
     print "Creating issue %d" % issue.id
     author_phid = api.get_phid_by_username(tr_user(issue.author))
     assignee_phid = None if issue.assignee is None else api.get_phid_by_username(tr_user(issue.assignee))
-    clean_issue_description = issue.description
+    if issue.description == None:
+        clean_issue_description = ""
+    else:
+        clean_issue_description = issue.description
     for re_obj in CLEAN_DESCRIPTION_REGEXES:
         clean_issue_description = re_obj.sub("",clean_issue_description)
     description = "= Task migrated from github issue #%d which was available at %s =\n\n%s" % (issue.id, issue.url, clean_issue_description)
@@ -104,9 +107,13 @@ for issue in github_issues:
             print "DEBUG: matched \"%s\""%(comment[s_pos:e_pos])
             title = m_attachment.group(1)
             link = m_attachment.group(2)
-            data = urllib2.urlopen (link)
-            upload = api.upload_file(title, data.read(), "")
-            comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
+	    try:
+                data = urllib2.urlopen (link)
+            except urllib2.HTTPError, e:
+                comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
+            else:
+                upload = api.upload_file(title, data.read(), "")
+                comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
             m_attachment = re_attachment.search(comment)
         api.task_comment(id, comment)
         if config.have_db_access:
