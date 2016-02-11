@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import time
 
 from config import *
 
@@ -18,17 +19,34 @@ def write_cached_json(suffix, data):
         f.write(data)
 
 def rate_limited(headers):
+    limited=False
+    reset_time=None
     for line in headers:
         if line.find(": ") == -1:
             continue
         (h, v) = line.split(": ")
         if h == "X-RateLimit-Remaining":
             try:
-                i = int(v)
+                remaining = int(v)
             except ValueError:
                 continue
-            if i < 1:
-                return True
+            if remaining < 1:
+                limited=True
+        if h == "X-RateLimit-Reset":
+            try:
+                reset_time = int(v)
+            except ValueError:
+                continue
+    if limited:
+        print "Warning: Rate Limit Reached"
+        print " X-RateLimit-Reset: %d"%(reset_time)
+        now = int(time.time())
+        print " Current Time: %d"%(now)
+        secs=reset_time-now+1
+        print " Sleep Seconds: %d"%(secs)
+        if secs > 0:
+            time.sleep(secs)
+            return True
 
 def fetch_json(suffix):
     cached = fetch_cached_json(suffix)
@@ -43,7 +61,5 @@ def fetch_json(suffix):
         result = cached
     (headers, payload) = result.split("\r\n\r\n", 1)
     if rate_limited(headers.split("\r\n")):
-        print "Warning: Rate Limit Reached, sleeping 30 seconds..."
-        time.sleep(30)
         return fetch_json(suffix)
     return (headers, payload)
