@@ -9,6 +9,8 @@ from wmfphablib import config
 
 from config import *
 
+from lib_user_map import *
+
 github_issues = FetchGithubIssues()
 api = phabapi.phabapi()
 project_phid = api.get_project_phid(config.project_name)
@@ -35,8 +37,8 @@ if config.force_ids and len(phabdb.get_task_list()) > 0:
 
 for issue in github_issues:
     print "Creating issue %d" % issue.id
-    author_phid = api.get_phid_by_username(issue.author)
-    assignee_phid = None if issue.assignee is None else api.get_phid_by_username(issue.assignee)
+    author_phid = api.get_phid_by_username(tr_user(issue.author))
+    assignee_phid = None if issue.assignee is None else api.get_phid_by_username(tr_user(issue.assignee))
     clean_issue_description = issue.description
     for re_obj in CLEAN_DESCRIPTION_REGEXES:
         clean_issue_description = re_obj.sub("",clean_issue_description)
@@ -84,7 +86,7 @@ for issue in github_issues:
 
     for (author, date, comment) in issue.comments:
         print "Adding comment from %s" % author
-        author_phid = api.get_phid_by_username(author)
+        author_phid = api.get_phid_by_username(tr_user(author))
         if author_phid is None or config.have_db_access is False:
             comment = "> Comment originaly made by **%s** on //%s//\n\n%s" % (author, date, comment)
         api.task_comment(id, comment)

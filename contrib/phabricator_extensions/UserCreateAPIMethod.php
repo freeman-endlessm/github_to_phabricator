@@ -14,7 +14,8 @@ final class UserEnableConduitAPIMethod extends UserConduitAPIMethod {
     return array(
       'username' => 'required string<username>',
       'realname' => 'required string<realname>',
-      'email' => 'required string<email>',
+      'email'    => 'required string<email>',
+      'password' => 'required string<password>',
     );
   }
 
@@ -40,6 +41,7 @@ final class UserEnableConduitAPIMethod extends UserConduitAPIMethod {
     $username = $request->getValue('username');
     $realname = $request->getValue('realname');
     $create_email = $request->getValue('email');
+    $password = $request->getValue('password');
 
     if (!PhabricatorUser::validateUsername($username)) {
       throw new ConduitException('ERR-INVALID-USERNAME');
@@ -59,12 +61,12 @@ final class UserEnableConduitAPIMethod extends UserConduitAPIMethod {
     }
 
     # Verify Unique email
-    #$duplicate = id(new PhabricatorUserEmail())->loadOneWhere(
-    #  'address = %s',
-    #  $create_email);
-    #if ($duplicate) {
-    #  throw new ConduitException('ERR-DUPLICATE-EMAIL');
-    #}
+    $duplicate = id(new PhabricatorUserEmail())->loadOneWhere(
+      'address = %s',
+      $create_email);
+    if ($duplicate) {
+      throw new ConduitException('ERR-DUPLICATE-EMAIL');
+    }
 
     $user = new PhabricatorUser();
     $user->setUsername($username);
@@ -80,7 +82,11 @@ final class UserEnableConduitAPIMethod extends UserConduitAPIMethod {
         ->setIsVerified(1);
 
       $user->setIsApproved(1);
+
       $editor->createNewUser($user, $email);
+
+      $envelope = new PhutilOpaqueEnvelope($password);
+      $editor->changePassword($user, $envelope);
 
     $user->saveTransaction();
 

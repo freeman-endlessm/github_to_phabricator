@@ -10,6 +10,10 @@ PROJECT="repository"
 MIN_ID=None
 MAX_ID=None
 
+#github_members.py
+CREATE_ACCOUNTS=True
+ACCOUNT_EMAIL_DOMAIN="domain.com"
+
 BASE_URL="https://api.github.com"
 CACHE_DIR="cache/"
 
