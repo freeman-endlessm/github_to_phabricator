@@ -6,6 +6,7 @@ phab_token = "api-token"
 phab_host = "https://phabricator.example.com/api/"
 phabricator_path = "/srv/phabricator"
 project_name = "project-name"
+static_custom_fields = { "com.example.team": "com.example.team:core" }
 migration_user = "github-migration"
 delete_existing_issues = False
 force_ids = False

@@ -84,6 +84,10 @@ for issue in github_issues:
                             field_id=LABELS_TO_FIELDS[field_name]["PHABRICATOR_FIELD"]
                             api.set_custom_field(id, field_id, field_value)
 
+    if config.static_custom_fields != None:
+        for field in config.static_custom_fields.keys():
+            api.set_custom_field(id, field, config.static_custom_fields[field])
+
     for (author, date, comment) in issue.comments:
         print "Adding comment from %s" % author
         author_phid = api.get_phid_by_username(tr_user(author))
