@@ -12,6 +12,8 @@ delete_existing_issues = False
 force_ids = False
 have_db_access = False
 
+file_upload_timeout = 300
+
 translate_labels = None
 # translate_labels = {
 #   #"GitHub Label Name": ("Phabricator Field", "Value"),

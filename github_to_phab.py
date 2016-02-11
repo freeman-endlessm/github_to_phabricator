@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
+import re
 import sys
+import urllib2
 from github_issues import FetchGithubIssues
 from wmfphablib import phabdb
 from wmfphablib import phabapi
@@ -14,6 +16,7 @@ from lib_user_map import *
 github_issues = FetchGithubIssues()
 api = phabapi.phabapi()
 project_phid = api.get_project_phid(config.project_name)
+re_attachment=re.compile("\!?\[(.*?)\]\((.*?githubusercontent.*?)\)")
 
 if project_phid is None:
     print "Could not find the project '%s' in Phabricator" % config.project_name
@@ -93,6 +96,18 @@ for issue in github_issues:
         author_phid = api.get_phid_by_username(tr_user(author))
         if author_phid is None or config.have_db_access is False:
             comment = "> Comment originaly made by **%s** on //%s//\n\n%s" % (author, date, comment)
+        # Migrate Attachments
+        m_attachment = re_attachment.search(comment)
+        while m_attachment != None:
+            s_pos = m_attachment.start(0)
+            e_pos = m_attachment.end(0)
+            print "DEBUG: matched \"%s\""%(comment[s_pos:e_pos])
+            title = m_attachment.group(1)
+            link = m_attachment.group(2)
+            data = urllib2.urlopen (link)
+            upload = api.upload_file(title, data.read(), "")
+            comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
+            m_attachment = re_attachment.search(comment)
         api.task_comment(id, comment)
         if config.have_db_access:
             tphid = phabdb.last_comment(phid)
