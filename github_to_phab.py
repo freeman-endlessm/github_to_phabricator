@@ -121,7 +121,6 @@ for issue in github_issues:
                     value = field_value
                 task_info = api.get_task_info(id)
                 aux_field_name="std:maniphest:%s"%(field_name)
-                print "DEBUG: " + str(task_info['auxiliary'])
                 if task_info['auxiliary'].has_key(aux_field_name) and task_info['auxiliary'][aux_field_name] != None:
                         value = task_info['auxiliary'][aux_field_name] + ", " + value
                 api.set_custom_field(id, field_name, value)
@@ -162,7 +161,7 @@ for issue in github_issues:
         while m_attachment != None:
             s_pos = m_attachment.start(0)
             e_pos = m_attachment.end(0)
-            print "DEBUG: matched \"%s\""%(comment[s_pos:e_pos])
+            print " => Attachment Found: \"%s\"" % (comment[s_pos:e_pos])
             title = m_attachment.group(1)
             link = m_attachment.group(2)
             try:
