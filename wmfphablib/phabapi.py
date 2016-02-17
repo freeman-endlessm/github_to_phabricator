@@ -72,6 +72,10 @@ class phabapi:
         out = self.con.maniphest.update(id=task, projectPHIDs=projects)
         return out
 
+    def get_task_info(self, task):
+        out = self.con.maniphest.info(task_id=int(task))
+        return out
+
     def task_create(self, title, desc, id, priority, ownerPhid=None, projects=[]):
         return self.con.maniphest.createtask(title=title,
                                         description="%s" % desc,

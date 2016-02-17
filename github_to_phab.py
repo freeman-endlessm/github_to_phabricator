@@ -115,13 +115,30 @@ for issue in github_issues:
                     value = field_value
                 api.set_custom_field(id, field_name, value)
 
-            if translation['destination_type'] == "SET_PROJECT":
+            if translation['destination_type'] == "APPEND_CUSTOM_TEXT_FIELD":
+                ( field_name, field_value ) = translation['destination_opts']
                 if source_group != None:
-                    new_project = translation['destination_opts'] % (source_group)
+                    value = field_value % (source_group)
                 else:
-                    new_project = translation['destination_opts']
+                    value = field_value
+                task_info = api.get_task_info(id)
+                aux_field_name="std:maniphest:%s"%(field_name)
+                print "DEBUG: " + str(task_info['auxiliary'])
+                if task_info['auxiliary'].has_key(aux_field_name) and task_info['auxiliary'][aux_field_name] != None:
+                        value = task_info['auxiliary'][aux_field_name] + ", " + value
+                api.set_custom_field(id, field_name, value)
+
+            if translation['destination_type'] == "SET_PROJECT":
+                new_project = translation['destination_opts']
                 new_project_phid = api.get_project_phid(new_project)
                 api.change_project(id, [new_project_phid])
+
+            if translation['destination_type'] == "ADD_PROJECT":
+                new_project = translation['destination_opts']
+                new_project_phid = api.get_project_phid(new_project)
+                projects=set(api.get_task_info(id)['projectPHIDs'])
+                new_projects=list(projects.union([new_project_phid]))
+                api.change_project(id, new_projects)
 
             if translation['destination_type'] == "COMPONENT":
                 field_name = translation['destination_opts']

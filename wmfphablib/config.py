@@ -73,7 +73,7 @@ translations = [
   {
     "source_type":      "LABEL",
     "match_object":     re.compile("^Product:\w*(.+)$"),
-    "destination_type": "CUSTOM_FIELD",
+    "destination_type": "APPEND_CUSTOM_TEXT_FIELD",
     "destination_opts": [ "com.example.hw_product", "%s" ],
   },
   {
@@ -81,6 +81,12 @@ translations = [
     "match_object":     re.compile("^(:?Duplicate|Invalid)$"),
     "destination_type": "STATUS",
     "destination_opts": "invalid",
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Won't fix$"),
+    "destination_type": "STATUS",
+    "destination_opts": "wontfix",
   },
   {
     "source_type":      "LABEL",
@@ -94,4 +100,11 @@ translations = [
     "destination_type": "CUSTOM_FIELD",
     "destination_opts": [ "com.example.task_type", "com.example.task_type:enhancement" ],
   },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Blocked: Product$"),
+    "destination_type": "ADD_PROJECT",
+    "destination_opts": "Product",
+  },
+
 ]
