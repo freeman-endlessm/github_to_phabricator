@@ -29,6 +29,10 @@ class Issue(object):
             self.closed_at = datetime.strptime(self.json['closed_at'], '%Y-%m-%dT%H:%M:%SZ')
         else:
             self.closed_at = None
+        if self.json['milestone'] != None and self.json['milestone'].has_key('title'):
+            self.milestone =  self.json['milestone']['title']
+        else:
+            self.milestone = None
         self.comments = []
 
     def AddComment(self, author, date, content):

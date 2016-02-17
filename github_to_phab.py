@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import re
+import string
 import sys
 import urllib2
 from github_issues import FetchGithubIssues
@@ -17,6 +18,9 @@ github_issues = FetchGithubIssues()
 api = phabapi.phabapi()
 project_phid = api.get_project_phid(config.project_name)
 re_attachment=re.compile("\!?\[(.*?)\]\((.*?githubusercontent.*?)\)")
+
+def lower_snake_caseify(s):
+    return "_".join(re.sub(r'\W+', ' ', s.lower()).split(None))
 
 if project_phid is None:
     print "Could not find the project '%s' in Phabricator" % config.project_name
@@ -39,7 +43,7 @@ if config.force_ids and len(phabdb.get_task_list()) > 0:
     sys.exit(-1)
 
 for issue in github_issues:
-    print "Creating issue %d" % issue.id
+    print "Migrating issue %d" % issue.id
     author_phid = api.get_phid_by_username(tr_user(issue.author))
     assignee_phid = None if issue.assignee is None else api.get_phid_by_username(tr_user(issue.assignee))
     if issue.description == None:
@@ -53,6 +57,7 @@ for issue in github_issues:
         description = "> Issue originally made by **%s** on //%s//\n\n%s" % (issue.author, issue.created_at, description)
     new_task = api.task_create(issue.title, description, issue.id, 90, assignee_phid, [project_phid])
     phid = new_task['phid']
+    print " => Phabricator Task: " + phid
     if config.force_ids:
         phabdb.set_task_id(issue.id, phid)
         id = issue.id
@@ -72,27 +77,65 @@ for issue in github_issues:
                 tphid = phabdb.last_state_change(phid)
                 phabdb.set_transaction_time(tphid, issue.closed_at.strftime("%s"))
 
-    if config.translate_labels != None:
-        for ilabel in issue.labels:
-            if config.translate_labels.has_key(ilabel):
-                (field_type, field_value) = config.translate_labels[ilabel]
-                #print "DEBUG: trying to translate Label %s to field_type %s and value %s"%(ilabel, field_type, field_value)
-                if field_type=="Status":
-                    print "Label Translate: GitHub Label %s -> Phabricator Status %s"%(ilabel, field_value)
-                    api.set_status(id, field_value)
-                elif field_type=="Priority":
-                    print "Label Translate: GitHub Label %s -> Phabricator Priority %s"%(ilabel, field_value)
-                    api.set_priority(id, field_value)
-                else:
-                    for field_name in LABELS_TO_FIELDS.keys():
-                        if field_type==field_name:
-                            print "Label Translate: GitHub Label %s -> Phabricator %s %s"%(ilabel, field_type, field_value)
-                            field_id=LABELS_TO_FIELDS[field_name]["PHABRICATOR_FIELD"]
-                            api.set_custom_field(id, field_id, field_value)
-
     if config.static_custom_fields != None:
         for field in config.static_custom_fields.keys():
             api.set_custom_field(id, field, config.static_custom_fields[field])
+
+    for translation in config.translations:
+
+        #INIT
+        hits=[]
+
+        #SOURCE
+        if translation['source_type'] == "MILESTONE" and issue.milestone != None:
+            match = translation['match_object'].search(issue.milestone)
+            if match:
+                hits.append(match)
+
+        if translation['source_type'] == "LABEL":
+            for ilabel in issue.labels:
+                match = translation['match_object'].search(ilabel)
+                if match:
+                    hits.append(match)
+
+        #DEST
+        for match in hits:
+            if match and len(match.groups()) > 0:
+                source_group=match.group(1)
+            else:
+                source_group=None
+
+            print " => Translation [%s (%s)=>%s (%s, %s)]"%(translation['source_type'], translation['match_object'].pattern,translation['destination_type'], str(translation['destination_opts']),source_group)
+
+            if translation['destination_type'] == "CUSTOM_FIELD":
+                ( field_name, field_value ) = translation['destination_opts']
+                if source_group != None:
+                    value = field_value % (source_group)
+                else:
+                    value = field_value
+                api.set_custom_field(id, field_name, value)
+
+            if translation['destination_type'] == "SET_PROJECT":
+                if source_group != None:
+                    new_project = translation['destination_opts'] % (source_group)
+                else:
+                    new_project = translation['destination_opts']
+                new_project_phid = api.get_project_phid(new_project)
+                api.change_project(id, [new_project_phid])
+
+            if translation['destination_type'] == "COMPONENT":
+                field_name = translation['destination_opts']
+                component_name = field_name + ":" + lower_snake_caseify(source_group)
+                api.set_custom_field(id, field_name, component_name)
+
+            if translation['destination_type'] == "STATUS":
+                field_value = translation['destination_opts']
+                api.set_status(id, field_value)
+
+            if translation['destination_type'] == "PRIORITY":
+                field_value = translation['destination_opts']
+                api.set_priority(id, field_value)
+
 
     for (author, date, comment) in issue.comments:
         print "Adding comment from %s" % author
@@ -107,7 +150,7 @@ for issue in github_issues:
             print "DEBUG: matched \"%s\""%(comment[s_pos:e_pos])
             title = m_attachment.group(1)
             link = m_attachment.group(2)
-	    try:
+            try:
                 data = urllib2.urlopen (link)
             except urllib2.HTTPError, e:
                 comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]

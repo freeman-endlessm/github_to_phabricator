@@ -68,6 +68,10 @@ class phabapi:
         out = self.con.maniphest.update(id=task, auxiliary={"std:maniphest:%s"%(field): value})
         return out
 
+    def change_project(self, task, projects=[]):
+        out = self.con.maniphest.update(id=task, projectPHIDs=projects)
+        return out
+
     def task_create(self, title, desc, id, priority, ownerPhid=None, projects=[]):
         return self.con.maniphest.createtask(title=title,
                                         description="%s" % desc,

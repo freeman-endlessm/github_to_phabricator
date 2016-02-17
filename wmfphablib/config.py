@@ -14,12 +14,84 @@ have_db_access = False
 
 file_upload_timeout = 300
 
-translate_labels = None
-# translate_labels = {
-#   #"GitHub Label Name": ("Phabricator Field", "Value"),
-#   "P0 - Critical": ("Priority", "100"),
-#   "P1 - High Priority": ("Priority", "80"),
-#   "P2 - Medium Priority": ("Priority", "50"),
-#   "P3 - Low Priority": ("Priority", "25"),
-#   # Output from github_labels goes here...
-# }
+import re
+translations = [
+  {
+    "source_type":      "MILESTONE",
+    "match_object":     re.compile("^Version-(\d+\.\d+\.\d+)"),
+    "destination_type": "CUSTOM_FIELD",
+    "destination_opts": [ "com.example.release", "com.example.release:%s" ]
+  },
+  {
+    "source_type":      "MILESTONE",
+    "match_object":     re.compile("^(?:Closed )?IT Tasks"),
+    "destination_type": "SET_PROJECT",
+    "destination_opts": "IT",
+  },
+  {
+    "source_type":      "MILESTONE",
+    "match_object":     re.compile("^(?:Closed )?IT Tasks"),
+    "destination_type": "CUSTOM_FIELD",
+    "destination_opts": [ "com.example.team", "com.example.team:none" ],
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Critical$"),
+    "destination_type": "PRIORITY",
+    "destination_opts": 100
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^High Priority$"),
+    "destination_type": "PRIORITY",
+    "destination_opts": 80
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Medium Priority$"),
+    "destination_type": "PRIORITY",
+    "destination_opts": 50
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Low Priority$"),
+    "destination_type": "PRIORITY",
+    "destination_opts": 25
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Unprocessed$"),
+    "destination_type": "PRIORITY",
+    "destination_opts": 90
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Cmpnt:\w*(.+)$"),
+    "destination_type": "COMPONENT",
+    "destination_opts": "com.example.component",
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Product:\w*(.+)$"),
+    "destination_type": "CUSTOM_FIELD",
+    "destination_opts": [ "com.example.hw_product", "%s" ],
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^(:?Duplicate|Invalid)$"),
+    "destination_type": "STATUS",
+    "destination_opts": "invalid",
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Bug$"),
+    "destination_type": "CUSTOM_FIELD",
+    "destination_opts": [ "com.example.task_type", "com.example.task_type:bug" ],
+  },
+  {
+    "source_type":      "LABEL",
+    "match_object":     re.compile("^Enhancement$"),
+    "destination_type": "CUSTOM_FIELD",
+    "destination_opts": [ "com.example.task_type", "com.example.task_type:enhancement" ],
+  },
+]
