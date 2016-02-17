@@ -65,16 +65,21 @@ if __name__ == '__main__':
     members = FetchGithubMembers()
     for member in members:
         print "#%s" % (member.login)
+        login = member.login.lower()
         user = tr_user(member.login)
         name = tr_user_name(member.login)
-        password=gen_password()
-        if user == None:
-            continue
         if CREATE_ACCOUNTS != True:
             continue
-        try:
-            api.create_user(user, name, "%s@%s"%(user,ACCOUNT_EMAIL_DOMAIN),password)
-        except APIError, e:
-            print "Warning: Failed to create user %s: %s"%(user, e)
+        password=gen_password()
+        if user != None:
+            email = "%s@%s"%(user,ACCOUNT_EMAIL_DOMAIN)
         else:
-            print "%s,%s"%(user, password)
+            email = "no-reply-github-user-%s@%s"%(login,ACCOUNT_EMAIL_DOMAIN)
+        if name == None:
+            name = login
+        try:
+            api.create_user(login, name, email, password)
+        except APIError, e:
+            print "Warning: Failed to create user %s: %s"%(login, e)
+        else:
+            print "%s,%s"%(login, password)
