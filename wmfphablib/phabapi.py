@@ -124,13 +124,25 @@ class phabapi:
             log("upload policy for %s is %s" % (name, viewPolicy))
             out = {}
             self.con.timeout = config.file_upload_timeout
-            encoded = base64.b64encode(data)
-            uploadphid = self.call_method("file", "upload", {'name': name,
-                                              'data_base64': encoded,
-                                              'viewPolicy': viewPolicy})
-            out['phid'] = uploadphid
-            log("%s upload response: %s" % (name, uploadphid.response))
-            fileid = phabdb.get_file_id_by_phid(uploadphid.response)
+            chunk_threshold = 8*1024*1024;
+            chunk_size = 4*1024*1024;
+            file_len = len(data)
+            if file_len <= chunk_threshold:
+                encoded = base64.b64encode(data)
+                response = self.call_method("file", "upload", {'name': name, 'data_base64': encoded, 'viewPolicy': viewPolicy})
+		uploadphid = response.response
+                out['phid'] = uploadphid
+            else: # Do chunked upload
+                uploadphid = self.call_method("file", "allocate", {'name': name, 'contentLength': file_len, 'viewPolicy': viewPolicy})['filePHID']
+		cur_pos = 0
+		while cur_pos < file_len:
+		    end_pos = cur_pos + chunk_size
+		    encoded=base64.b64encode(data[cur_pos:end_pos])
+		    self.call_method("file", "uploadchunk", {'filePHID': uploadphid, 'byteStart': cur_pos, 'dataEncoding': "base64", 'data': encoded})
+		    cur_pos = end_pos
+                out['phid'] = uploadphid
+            log("%s upload response: %s" % (name, uploadphid))
+            fileid = phabdb.get_file_id_by_phid(uploadphid)
             out['id'] = int(fileid)
             out['name'] = name
             out['objectName'] = "F%s" % (fileid,)
