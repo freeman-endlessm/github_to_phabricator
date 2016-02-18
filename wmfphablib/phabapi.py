@@ -2,7 +2,9 @@ import base64
 import config
 import phabricator
 from phabricator import Phabricator
+from phabricator import Resource
 import phabdb
+import time
 from util import log
 from util import vlog
 from util import errorlog as elog
@@ -13,91 +15,71 @@ class phabapi:
     def __init__(self):
         self.con = Phabricator(host=config.phab_host, token=config.phab_token)
 
-    def blog_update(self, botname, title, body):
-        blogphid = phabdb.get_bot_blog(botname)
-        if blogphid is None:
-            elog('blogphid is none')
-            return
-        return self.con.phame.createpost(blogPHID=blogphid,
-                                         body=body,
-                                         title=title,
-                                         phameTitle=title)
-
-    def sync_assigned(self, userphid, id, prepend):
-        refs = phabdb.reference_ticket('%s%s' % (prepend, id))
-        if not refs:
-            log('reference ticket not found for %s' % ('%s%s' % (prepend, id),))
-            return
-        current = self.con.maniphest.query(phids=[refs[0]])
-        if current[current.keys()[0]]['ownerPHID']:
-            log('current owner found for => %s' % (str(id),))
-            return current
-        log('assigning T%s to %s' % (str(id), userphid))
-        return phabdb.set_issue_assigned(refs[0], userphid)
-
-    def synced_authored(self, phid, id, ref):
-        refs = phabdb.reference_ticket('%s%s' % (ref, id))
-        if not refs:
-            log('reference ticket not found for %s' % ('%s%s' % (ref, id),))
-            return
-        log('reference ticket found for %s' % ('%s%s' % (ref, id),))
-        newid = self.ticket_id_by_phid(refs[0])
-        log("Updating author for %s to %s" % (refs, phid))
-        phabdb.set_task_author(phid, newid)
-
-        descript = phabdb.get_task_description(refs[0])
-        try:
-            clean_description = descript.split('**Description:**\n', 1)[1]
-            phabdb.set_task_description(refs[0], clean_description)
-        except:
-            phabdb.set_task_description(refs[0], descript)
+    def call_method(self, method, endpoint, args):
+	retries = 2
+	out = None
+        __method = Resource(api=self.con, method=method, endpoint=endpoint)
+	while out == None and retries > 0:
+	    try:
+		out = __method(**args)
+	    except Exception, e:
+		print "Warning: API Call to %s.%s with args %s failed." % (method, endpoint, args)
+		time.sleep(1)
+		retries = retries - 1
+	if out == None:
+	    raise Exception("API Call to %s.%s with args %s failed 3 times.")
+        return out
 
     def task_comment(self, task, msg):
-        out = self.con.maniphest.update(id=task, comments=msg)
+        out = self.call_method("maniphest", "update", {'id': task, 'comments': msg})
         return out
 
     def set_status(self, task, status):
-        out = self.con.maniphest.update(id=task, status=status)
+        out = self.call_method("maniphest", "update", {'id': task, 'status': status})
         return out
 
     def set_priority(self, task, priority):
-        out = self.con.maniphest.update(id=task, priority=priority)
+        out = self.call_method("maniphest", "update", {'id': task, 'priority': priority})
         return out
 
     def set_custom_field(self, task, field, value):
-        out = self.con.maniphest.update(id=task, auxiliary={"std:maniphest:%s"%(field): value})
+        out = self.call_method("maniphest", "update", {'id': task, 'auxiliary': {"std:maniphest:%s"%(field): value}})
         return out
 
     def change_project(self, task, projects=[]):
-        out = self.con.maniphest.update(id=task, projectPHIDs=projects)
+        out = self.call_method("maniphest", "update", {'id': task, 'projectPHIDs': projects})
         return out
 
     def get_task_info(self, task):
-        out = self.con.maniphest.info(task_id=int(task))
+        out = self.call_method("maniphest", "info", {'task_id': int(task)})
         return out
 
     def task_create(self, title, desc, id, priority, ownerPhid=None, projects=[]):
-        return self.con.maniphest.createtask(title=title,
-                                        description="%s" % desc,
-                                        projectPHIDs=projects,
-                                        priority=priority,
-                                        ownerPHID=ownerPhid,
-                                        auxiliary={"std:maniphest:external_reference":"%s" % (id,)})
+	return self.call_method( "maniphest", "createtask",
+	    {
+		'title': title,
+		'description': desc,
+		'projectPHIDs': projects,
+		'priority': priority,
+		'ownerPHID': ownerPhid,
+		'auxiliary': {"std:maniphest:external_reference":"%s" % (id,)}
+	    })
 
     def get_project_phid(self, name):
-        result = self.con.project.query(names=[name])
+        result = self.call_method("project", "query", {'names': [name]})
         if result:
             return result['data'].keys()[0]
         return None
 
     def get_phid_by_username(self, username):
-        result = self.con.user.query(usernames=[username])
+        result = self.call_method("user", "query", {'usernames': [username]})
         if len(result.response):
             return result[0]['phid']
         return None
 
     def create_user(self, username, realname, email, password):
-        self.con.user.create(username=username, realname=realname, email=email, password=password)
+        self.call_method("user", "create", {'username': username, 'realname': realname, 'email': email, 'password': password})
+	# should this return something?
 
     if config.have_db_access:
         def ensure_project(self, project_name,
@@ -143,9 +125,9 @@ class phabapi:
             out = {}
             self.con.timeout = config.file_upload_timeout
             encoded = base64.b64encode(data)
-            uploadphid = self.con.file.upload(name=name,
-                                              data_base64=encoded,
-                                              viewPolicy=viewPolicy)
+            uploadphid = self.call_method("file", "upload", {'name': name,
+                                              'data_base64': encoded,
+                                              'viewPolicy': viewPolicy})
             out['phid'] = uploadphid
             log("%s upload response: %s" % (name, uploadphid.response))
             fileid = phabdb.get_file_id_by_phid(uploadphid.response)
