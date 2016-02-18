@@ -23,11 +23,11 @@ class phabapi:
 	    try:
 		out = __method(**args)
 	    except Exception, e:
-		print "Warning: API Call to %s.%s with args %s failed." % (method, endpoint, args)
+		print "Warning: API Call to %s.%s with args %s failed:\n%s" % (method, endpoint, args, e)
 		time.sleep(1)
 		retries = retries - 1
 	if out == None:
-	    raise Exception("API Call to %s.%s with args %s failed 3 times.")
+	    raise Exception("API Call to %s.%s failed 3 times, giving up..."%(method, endpoint))
         return out
 
     def task_comment(self, task, msg):
