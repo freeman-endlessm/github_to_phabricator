@@ -169,8 +169,12 @@ for issue in github_issues:
             except urllib2.HTTPError, e:
                 comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
             else:
-                upload = api.upload_file(title, data.read(), "")
-                comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
+		try:
+		    upload = api.upload_file(title, data.read(), "")
+		except:
+		    comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
+		else:
+                    comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
             m_attachment = re_attachment.search(comment)
         api.task_comment(id, comment)
         if config.have_db_access:
