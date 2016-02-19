@@ -97,18 +97,18 @@ for issue in github_issues:
                     hits.append(match)
 
         if translation['source_type'] == "MULTI_LABEL":
-	    overall_match = True
-	    for match_object in translation['match_object']:
-		match_found = False
-		for ilabel in issue.labels:
+            overall_match = True
+            for match_object in translation['match_object']:
+                match_found = False
+                for ilabel in issue.labels:
                     match = match_object.search(ilabel)
                     if match:
                         match_found = True
-		if not match_found:
-		    overall_match = False
-		    break
-	    if overall_match:
-		hits.append(False)
+                if not match_found:
+                    overall_match = False
+                    break
+            if overall_match:
+                hits.append(False)
 
         if translation['source_type'] == "DESCRIPTION":
             match = translation['match_object'].search(issue.description)
@@ -127,13 +127,13 @@ for issue in github_issues:
             else:
                 source_group=None
 
-	    if translation['source_type'] == "MULTI_LABEL":
-		match_objects=""
-		for m in translation['match_object']:
-			match_objects += m.pattern + ", "
-		match_objects=match_objects[0:-2]
-		print " => Translation [MULTI_LABEL (%s)=>%s (%s, %s)]"%(match_objects,translation['destination_type'], str(translation['destination_opts']),source_group)
-	    else:
+            if translation['source_type'] == "MULTI_LABEL":
+                match_objects=""
+                for m in translation['match_object']:
+                        match_objects += m.pattern + ", "
+                match_objects=match_objects[0:-2]
+                print " => Translation [MULTI_LABEL (%s)=>%s (%s, %s)]"%(match_objects,translation['destination_type'], str(translation['destination_opts']),source_group)
+            else:
                 print " => Translation [%s (%s)=>%s (%s, %s)]"%(translation['source_type'], translation['match_object'].pattern,translation['destination_type'], str(translation['destination_opts']),source_group)
 
             if translation['destination_type'] == "CUSTOM_FIELD":
