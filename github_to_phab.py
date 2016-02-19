@@ -96,6 +96,30 @@ for issue in github_issues:
                 if match:
                     hits.append(match)
 
+        if translation['source_type'] == "MULTI_LABEL":
+	    overall_match = True
+	    for match_object in translation['match_object']:
+		match_found = False
+		for ilabel in issue.labels:
+                    match = match_object.search(ilabel)
+                    if match:
+                        match_found = True
+		if not match_found:
+		    overall_match = False
+		    break
+	    if overall_match:
+		hits.append(False)
+
+        if translation['source_type'] == "DESCRIPTION":
+            match = translation['match_object'].search(issue.description)
+            if match:
+                hits.append(match)
+
+        if translation['source_type'] == "TITLE":
+            match = translation['match_object'].search(issue.title)
+            if match:
+                hits.append(match)
+
         #DEST
         for match in hits:
             if match and len(match.groups()) > 0:
@@ -103,7 +127,14 @@ for issue in github_issues:
             else:
                 source_group=None
 
-            print " => Translation [%s (%s)=>%s (%s, %s)]"%(translation['source_type'], translation['match_object'].pattern,translation['destination_type'], str(translation['destination_opts']),source_group)
+	    if translation['source_type'] == "MULTI_LABEL":
+		match_objects=""
+		for m in translation['match_object']:
+			match_objects += m.pattern + ", "
+		match_objects=match_objects[0:-2]
+		print " => Translation [MULTI_LABEL (%s)=>%s (%s, %s)]"%(match_objects,translation['destination_type'], str(translation['destination_opts']),source_group)
+	    else:
+                print " => Translation [%s (%s)=>%s (%s, %s)]"%(translation['source_type'], translation['match_object'].pattern,translation['destination_type'], str(translation['destination_opts']),source_group)
 
             if translation['destination_type'] == "CUSTOM_FIELD":
                 ( field_name, field_value ) = translation['destination_opts']
@@ -149,6 +180,14 @@ for issue in github_issues:
             if translation['destination_type'] == "PRIORITY":
                 field_value = translation['destination_opts']
                 api.set_priority(id, field_value)
+
+            if translation['destination_type'] == "ADD_COMMENT":
+                field_value = translation['destination_opts']
+                if source_group != None:
+                    value = field_value % (source_group)
+                else:
+                    value = field_value
+                api.task_comment(id, value)
 
 
     for (author, date, comment) in issue.comments:
