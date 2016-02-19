@@ -20,6 +20,29 @@ re_attachment=re.compile("\!?\[(.*?)\]\((.*?githubusercontent.*?)\)")
 def lower_snake_caseify(s):
     return "_".join(re.sub(r'\W+', ' ', s.lower()).split(None))
 
+def migrate_attachments(comment):
+    # Migrate Attachments
+    m_attachment = re_attachment.search(comment)
+    while m_attachment != None:
+        s_pos = m_attachment.start(0)
+        e_pos = m_attachment.end(0)
+        print " => Attachment Found: \"%s\"" % (comment[s_pos:e_pos])
+        title = m_attachment.group(1)
+        link = m_attachment.group(2)
+        try:
+            data = urllib2.urlopen (link)
+        except urllib2.HTTPError, e:
+            comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
+        else:
+            try:
+                upload = api.upload_file(title, data.read(), "")
+            except:
+                comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
+            else:
+                comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
+        m_attachment = re_attachment.search(comment)
+    return comment
+
 if project_phid is None:
     print "Could not find the project '%s' in Phabricator" % config.project_name
     sys.exit(-1)
@@ -53,6 +76,7 @@ for issue in github_issues:
     description = "= Task migrated from github issue #%d which was available at %s =\n\n%s" % (issue.id, issue.url, clean_issue_description)
     if config.have_db_access is False or author_phid is None:
         description = "> Issue originally made by **%s** on //%s//\n\n%s" % (issue.author, issue.created_at, description)
+    description = migrate_attachments(description)
     new_task = api.task_create(issue.title, description, issue.id, 90, assignee_phid, [project_phid])
     phid = new_task['phid']
     print " => Phabricator Task: " + phid
@@ -195,26 +219,8 @@ for issue in github_issues:
         author_phid = api.get_phid_by_username(author)
         if author_phid is None or config.have_db_access is False:
             comment = "> Comment originaly made by **%s** on //%s//\n\n%s" % (author, date, comment)
-        # Migrate Attachments
-        m_attachment = re_attachment.search(comment)
-        while m_attachment != None:
-            s_pos = m_attachment.start(0)
-            e_pos = m_attachment.end(0)
-            print " => Attachment Found: \"%s\"" % (comment[s_pos:e_pos])
-            title = m_attachment.group(1)
-            link = m_attachment.group(2)
-            try:
-                data = urllib2.urlopen (link)
-            except urllib2.HTTPError, e:
-                comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
-            else:
-		try:
-		    upload = api.upload_file(title, data.read(), "")
-		except:
-		    comment = comment[0:s_pos] + "** FAILED TO MIGRATE <%s|%s> **"%(title, link) + comment[e_pos:-1]
-		else:
-                    comment = comment[0:s_pos] + "{%s}"%upload["objectName"] + comment[e_pos:-1]
-            m_attachment = re_attachment.search(comment)
+        comment = migrate_attachments(comment)
+
         api.task_comment(id, comment)
         if config.have_db_access:
             tphid = phabdb.last_comment(phid)
