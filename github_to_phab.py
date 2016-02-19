@@ -135,11 +135,15 @@ for issue in github_issues:
                 hits.append(False)
 
         if translation['source_type'] == "DESCRIPTION":
+            if issue.description == None:
+		continue
             match = translation['match_object'].search(issue.description)
             if match:
                 hits.append(match)
 
         if translation['source_type'] == "TITLE":
+            if issue.title == None:
+		continue
             match = translation['match_object'].search(issue.title)
             if match:
                 hits.append(match)
