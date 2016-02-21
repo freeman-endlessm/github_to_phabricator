@@ -1,6 +1,7 @@
 import base64
 import config
 import phabricator
+import traceback
 from phabricator import Phabricator
 from phabricator import Resource
 import phabdb
@@ -24,6 +25,7 @@ class phabapi:
 		out = __method(**args)
 	    except Exception, e:
 		print "Warning: API Call to %s.%s with args %s failed:\n%s" % (method, endpoint, args, e)
+		traceback.print_exc()
 		time.sleep(1)
 		retries = retries - 1
 	if out == None:
