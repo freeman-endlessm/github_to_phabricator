@@ -136,17 +136,26 @@ for issue in github_issues:
 
         if translation['source_type'] == "DESCRIPTION":
             if issue.description == None:
-		continue
+                continue
             match = translation['match_object'].search(issue.description)
             if match:
                 hits.append(match)
 
         if translation['source_type'] == "TITLE":
             if issue.title == None:
-		continue
+                continue
             match = translation['match_object'].search(issue.title)
             if match:
                 hits.append(match)
+
+        if translation['source_type'] == "PHAB_COMPONENT":
+            aux_field_name = "std:maniphest:com.example.component"
+            task_info = api.get_task_info(id)
+            if task_info['auxiliary'].has_key(aux_field_name) and task_info['auxiliary'][aux_field_name] != None:
+                match = translation['match_object'].search(task_info['auxiliary'][aux_field_name])
+                if match:
+                    hits.append(match)
+
 
         #DEST
         for match in hits:

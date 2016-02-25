@@ -106,5 +106,10 @@ translations = [
     "destination_type": "ADD_PROJECT",
     "destination_opts": "Product",
   },
-
+  {
+    "source_type":      "PHAB_COMPONENT",
+    "match_object":     re.compile(":(?:database_sharding|metrics|metrics_analysis|metrics_instrumentation|soma)$"),
+    "destination_type": "CUSTOM_FIELD",
+    "destination_opts": [ "com.example.team", "com.example.team:services" ],
+  },
 ]
