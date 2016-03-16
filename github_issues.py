@@ -1,46 +1,11 @@
 #!/usr/bin/python
 
-import sys
-import subprocess
 import json
 import operator
 from datetime import datetime
-import os
 
-USERNAME="github username"
-TOKEN="github access token"
-USER="organization"
-PROJECT="repository"
-MIN_ID=None
-MAX_ID=None
-
-BASE_URL="https://api.github.com/"
-CACHE_DIR="cache/"
-
-def fetch_cached_json(suffix):
-    path = CACHE_DIR + suffix.replace("/", "_")
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            return f.read()
-    return None
-
-def write_cached_json(suffix, data):
-    path = CACHE_DIR + suffix.replace("/", "_")
-    with open(path, 'w') as f:
-        f.write(data)
-
-def fetch_json(suffix):
-    cached = fetch_cached_json(suffix)
-    if cached is None:
-        url = BASE_URL + "repos/" + USER + "/" + PROJECT + suffix
-
-        process = subprocess.Popen(['curl', '-i', '-s', '-u', USERNAME + ":" + TOKEN, url],
-                               stdout=subprocess.PIPE)
-        result = process.communicate()[0]
-        write_cached_json(suffix, result)
-    else:
-        result = cached
-    return result.split("\r\n\r\n", 1)
+from config import *
+from github_cache import *
 
 class Issue(object):
     def __init__(self, github_dict):
@@ -64,6 +29,10 @@ class Issue(object):
             self.closed_at = datetime.strptime(self.json['closed_at'], '%Y-%m-%dT%H:%M:%SZ')
         else:
             self.closed_at = None
+        if self.json['milestone'] != None and self.json['milestone'].has_key('title'):
+            self.milestone =  self.json['milestone']['title']
+        else:
+            self.milestone = None
         self.comments = []
 
     def AddComment(self, author, date, content):
@@ -76,7 +45,7 @@ def FetchGithubIssues():
     github_issues = []
 
     while page <= num_pages:
-        (headers, issues_json) = fetch_json("/issues?state=all&per_page=100&page=%d" % page)
+        (headers, issues_json) = fetch_json("/repos/%s/%s/issues?state=all&per_page=100&page=%d" % (USER, PROJECT, page))
         page = page + 1
         issues.extend(json.loads(issues_json))
         headers = headers.split('\r\n')
@@ -97,9 +66,12 @@ def FetchGithubIssues():
                 continue
         github_issues.append(issue)
         if issue.json['comments'] > 0:
-            (headers, comments_json) = fetch_json("/issues/%d/comments?per_page=100" % issue.id)
+            (headers, comments_json) = fetch_json("/repos/%s/%s/issues/%d/comments?per_page=100" % (USER, PROJECT, issue.id))
             comments = json.loads(comments_json)
             for c in comments:
+                if type(c) != dict:
+                    print "Warning: malformed comment ("+str(c)+") in issue#"+str(issue.id)+" type "+str(type(c))+". Skipping..."
+                    continue
                 issue.AddComment(c['user']['login'], c['created_at'], c['body'])
 
     return sorted(github_issues, key=operator.attrgetter('id'))
